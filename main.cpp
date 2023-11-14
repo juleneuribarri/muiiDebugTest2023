@@ -10,6 +10,7 @@ Timer timer;
 float resultado;
 int tiempo;
 
+
 struct estructuraMedidas {
   float vrms;
   float irms;
@@ -58,8 +59,8 @@ int main() {
 
 // Esta función calcula el valor RMS
 float calcularRMS(uint16_t *datos, int longitud) {
-  float rms = 0;
-  float constante =  800.0 / 65536; // divido al revés para que sea más rápido y así luego multiplico
+float rms = 0;
+float constante =  800.0 / 65536; // divido al revés para que sea más rápido y así luego multiplico
   for (int i = 0; i < longitud; i++) {
     float datoV = ((datos[i]) * constante) - 400.0; 
     rms += datoV * datoV;
@@ -76,25 +77,27 @@ void calcularDatos(uint16_t *datosV, uint16_t *datosI, int longitud,
   float datoI;
   float P = 0;
   float S, Q, FA, E;
+
+// vuelvo a declarar porque si hago como global tarda más
+float constante =  800.0 / 65536; // divido al revés para que sea más rápido y así luego multiplico
+float constante_2 =  5.0 / 65536;
+
   for (int i = 0; i < longitud; i++) {
-    datoV = (((float)datosV[i]) / 65536 * 800.0) - 400.0;
-    Vrms += pow(datoV, 2);
-  }
-  for (int i = 0; i < longitud; i++) {
-    datoI = (((float)datosI[i]) / 65536 * 5.0) - 2.5;
-    Irms += pow(datoI, 2);
-  }
-  for (int i = 0; i < longitud; i++) {
-    datoV = (((float)datosV[i]) / 65536 * 800.0) - 400.0;
-    datoI = (((float)datosI[i]) / 65536 * 5.0) - 2.5;
+    float datoV = ((datosV[i]) * constante) - 400.0;
+    Vrms += datoV * datoV;
+    float datoI = ((datosI[i]) * constante_2) - 2.5;
+    Irms += datoI *datoI;
     P += datoV * datoI;
+
   }
 
+// FUNCION SQRT?
+// SE PUEDE HACER COMO EN MATLAB LO DE METER A LA DCHA?
   Vrms = sqrt(Vrms / longitud);
   Irms = sqrt(Irms / longitud);
   P = P / longitud;
   S = Vrms * Irms;
-  Q = sqrt(pow(S, 2) - pow(P, 2));
+  Q = sqrt(S*S - P*P);
   FA = P / S;
   E = P/fs*longitudTrama/60/60/1000;
   medidas->vrms = Vrms;
