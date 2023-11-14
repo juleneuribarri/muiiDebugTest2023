@@ -61,7 +61,7 @@ float calcularRMS(uint16_t *datos, int longitud) {
   float rms = 0;
   float datoV;
   for (int i = 0; i < longitud; i++) {
-    datoV = (((float)datos[i]) / 65536 * 800.0) - 400.0; //hola
+    datoV = (((float)datos[i]) / 65536 * 800.0) - 400.0; //hola2ttyhg
     rms += pow(datoV, 2);
   }
   rms = sqrt(rms / longitud);
