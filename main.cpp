@@ -1,6 +1,7 @@
 #include "datos.h"
 #include "math.h"
 #include "mbed.h"
+ 
 
 #define longitudTrama 200
 #define fs (50 * 20)
@@ -19,10 +20,8 @@ struct estructuraMedidas {
   float energiaConsumida;
 };
 
-float calcularRMS(uint16_t *datos, int longitud);
-
-void calcularDatos(uint16_t *datosV, uint16_t *datosI, int longitud,
-                   estructuraMedidas *medidas);
+float calcularRMS(const uint16_t *datos, int longitud);
+void calcularDatos(const uint16_t *datosV, const uint16_t *datosI, int longitud, estructuraMedidas *medidas);
 
 int main() {
 
@@ -33,8 +32,7 @@ int main() {
   printf("\n****El valor Vrms es %f calculado en %lld us ****\n\n", resultado,
          timer.elapsed_time().count());
 
-  estructuraMedidas medidas;
-  medidas.energiaConsumida = 0;
+  estructuraMedidas medidas = {0}; // Se inicializa todo a 0
 
   timer.reset();
   timer.start();
@@ -56,56 +54,44 @@ int main() {
 }
 
 // Esta función calcula el valor RMS
-float calcularRMS(uint16_t *datos, int longitud) {
-  float rms = 0;
-  float constante =
-      800.0 /
-      65536; // divido al revés para que sea más rápido y así luego multiplico
+ inline float calcularRMS(const uint16_t *datos, int longitud) {
+  float rms = 0.0;
+  const float constante = 800.0f / 65536.0f; // divido al revés para que sea más rápido y así luego multiplico
+
   for (int i = 0; i < longitud; i++) {
-    float datoV = ((datos[i]) * constante) - 400.0;
+    const float datoV = ((datos[i]) * constante) - 400.0f;
     rms += datoV * datoV;
   }
-  rms = sqrt(rms / longitud);
-  return rms;
+  
+  return sqrt(rms / longitud);
+
 }
 
-void calcularDatos(uint16_t *datosV, uint16_t *datosI, int longitud,
+void calcularDatos(const uint16_t *datosV, const uint16_t *datosI, int longitud,
                    estructuraMedidas *medidas) {
-  float Vrms = 0;
-  float datoV;
-  float Irms = 0;
-  float datoI;
-  float P = 0;
-  float S, Q, FA, E;
+  float Vrms = 0.0, Irms = 0.0, P = 0.0;
 
   // vuelvo a declarar porque si hago como global tarda más
-  float constante =
-      800.0 /
-      65536; // divido al revés para que sea más rápido y así luego multiplico
-  float constante_2 = 5.0 / 65536;
+  const float constante =
+      800.0 /65536; // divido al revés para que sea más rápido y así luego multiplico
+  const float constante_2 = 5.0 / 65536;
 
   for (int i = 0; i < longitud; i++) {
-    float datoV = ((datosV[i]) * constante) - 400.0;
+    const float datoV = ((datosV[i]) * constante) - 400.0;
     Vrms += datoV * datoV;
-    float datoI = ((datosI[i]) * constante_2) - 2.5;
+    const float datoI = ((datosI[i]) * constante_2) - 2.5;
     Irms += datoI * datoI;
     P += datoV * datoI;
   }
 
   // FUNCION SQRT? no hace falta
   // SE PUEDE HACER COMO EN MATLAB LO DE METER A LA DCHA? format document
-  Vrms = sqrt(Vrms / longitud);
-  Irms = sqrt(Irms / longitud);
-  P = P / longitud;
-  S = Vrms * Irms;
-  Q = sqrt(S * S - P * P);
-  FA = P / S;
-  E = P / fs * longitudTrama / 60 / 60 / 1000;
-  medidas->vrms = Vrms;
-  medidas->irms = Irms;
-  medidas->potenciaActiva = P;
-  medidas->potenciaAparente = S;
-  medidas->potenciaReactiva = Q;
-  medidas->factorDePotencia = FA;
-  medidas->energiaConsumida += E;
+  
+  medidas->vrms = sqrt(Vrms / longitud);
+  medidas->irms = sqrt(Irms / longitud);
+  medidas->potenciaActiva = P / longitud;
+  medidas->potenciaAparente = medidas->vrms * medidas->irms;
+  medidas->potenciaReactiva = sqrt((medidas->potenciaAparente)*(medidas->potenciaAparente)- (medidas->potenciaActiva)*(medidas->potenciaActiva));
+  medidas->factorDePotencia = medidas->potenciaActiva / medidas->potenciaAparente;
+  medidas->energiaConsumida += medidas->potenciaActiva / fs * longitudTrama / 3600000; // simplificamos
 }
